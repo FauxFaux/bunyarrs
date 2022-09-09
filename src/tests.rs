@@ -1,6 +1,4 @@
-use std::any::Any;
 use std::cell::RefCell;
-use std::io::Write as _;
 
 use serde_json::{json, Map, Value};
 
@@ -12,17 +10,15 @@ fn test_writer() -> Option<RefCell<Box<dyn AnyWrite>>> {
 
 fn into_lines(logger: Bunyarr) -> Vec<Map<String, Value>> {
     let vec = logger.into_inner();
-    let mut result = Vec::new();
-    for line in (*vec.borrow())
-        .as_any()
+    let borrow_checker_demands = AnyWrite::as_any(&**vec.borrow())
         .downcast_ref::<Vec<u8>>()
         .expect("was a valid test writer")
         .split(|&p| p == b'\n')
-    {
-        result.push(serde_json::from_slice(line).unwrap());
-    }
-
-    result
+        // .map(|s| s.trim_ascii())
+        .filter(|s| !s.is_empty())
+        .map(|s| serde_json::from_slice(s).unwrap())
+        .collect();
+    borrow_checker_demands
 }
 
 #[test]
@@ -36,5 +32,6 @@ fn smoke() {
 
     let lines = into_lines(logger);
 
+    assert_eq!(1, lines.len());
     assert_eq!(lines[0], serde_json::Map::new());
 }

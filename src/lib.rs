@@ -8,7 +8,7 @@ use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 #[cfg(test)]
-mod tests2;
+mod tests;
 
 pub struct Bunyarr {
     writer: RefCell<Box<dyn AnyWrite>>,
@@ -101,30 +101,5 @@ impl ProcInfo {
             hostname: gethostname::gethostname().into_string().unwrap_or_default(),
             pid: std::process::id(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{Bunyarr, Options};
-    use serde_json::{json, Value};
-    use std::any::Any;
-    use std::cell::RefCell;
-
-    #[test]
-    fn smoke() {
-        let logger = Bunyarr::with_options(Options {
-            name: "smoke".to_string(),
-            writer: Some(RefCell::new(Box::new(Vec::<u8>::new()))),
-        });
-
-        logger.log(10, json!({ "hello": 5 }).as_object().unwrap(), "woke");
-
-        let vec = logger.into_inner();
-        let obj: serde_json::Map<String, Value> =
-            serde_json::from_slice(vec.borrow().as_any().downcast_ref::<Vec<u8>>().unwrap())
-                .unwrap();
-
-        assert_eq!(obj, serde_json::Map::new());
     }
 }
