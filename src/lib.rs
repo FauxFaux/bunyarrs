@@ -7,8 +7,8 @@ use serde_json::{json, Value};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests2;
 
 pub struct Bunyarr {
     writer: RefCell<Box<dyn AnyWrite>>,
