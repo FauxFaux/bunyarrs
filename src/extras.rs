@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde_json::Value;
 
 pub trait Extras {
@@ -13,5 +15,17 @@ impl Extras for Value {
         } else {
             vec![("_".to_string(), self.clone())]
         }
+    }
+}
+
+impl Extras for &[(String, Value)] {
+    fn to_extras(&self) -> Vec<(String, Value)> {
+        self.to_vec()
+    }
+}
+
+impl Extras for HashMap<String, Value> {
+    fn to_extras(&self) -> Vec<(String, Value)> {
+        self.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
     }
 }

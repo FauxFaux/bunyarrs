@@ -89,6 +89,7 @@ impl Bunyarr {
 
     pub(crate) fn log(&self, level: u16, extras: impl Extras, event_type: &'static str) {
         // https://github.com/trentm/node-bunyan#core-fields
+        // allowing overwriting of things disallowed by bunyan, not particularly concerned, prefer the order
         let mut obj = serde_json::Map::<String, Value>::with_capacity(12);
         obj.insert(
             "time".to_string(),
@@ -98,15 +99,15 @@ impl Bunyarr {
                     .expect("built-in time and formatter"),
             ),
         );
+        obj.insert("level".to_string(), json!(level));
+        obj.insert("msg".to_string(), json!(event_type));
+        obj.insert("name".to_string(), json!(self.name));
         for (key, value) in extras.to_extras() {
             obj.insert(key, value);
         }
-        obj.insert("v".to_string(), json!(0));
-        obj.insert("msg".to_string(), json!(event_type));
-        obj.insert("level".to_string(), json!(level));
         obj.insert("hostname".to_string(), json!(PROC_INFO.hostname));
         obj.insert("pid".to_string(), json!(PROC_INFO.pid));
-        obj.insert("name".to_string(), json!(self.name));
+        obj.insert("v".to_string(), json!(0));
         let mut writer = RefCell::borrow_mut(&self.writer);
         let _ = serde_json::to_writer(writer.deref_mut(), &obj);
         let _ = writer.write_all(b"\n");
