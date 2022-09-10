@@ -1,7 +1,5 @@
-use std::any::Any;
-use std::cell::RefCell;
+use std::io;
 use std::io::Write;
-use std::ops::DerefMut;
 
 use serde_json::{json, Value};
 use time::format_description::well_known::Rfc3339;
@@ -15,14 +13,33 @@ mod extras;
 mod tests;
 
 pub struct Bunyarr {
-    writer: RefCell<Box<dyn AnyWrite>>,
+    writer: WriteImpl,
     name: String,
     min_level_inclusive: u16,
 }
 
+enum WriteImpl {
+    StdOut,
+    #[cfg(test)]
+    Test(std::cell::RefCell<Vec<u8>>),
+}
+
+impl WriteImpl {
+    fn work(&self, f: impl FnOnce(&mut dyn Write) -> io::Result<()>) -> io::Result<()> {
+        match self {
+            WriteImpl::StdOut => {
+                let mut w = io::stdout().lock();
+                f(&mut w)
+            }
+            #[cfg(test)]
+            WriteImpl::Test(vec) => f(&mut *vec.borrow_mut()),
+        }
+    }
+}
+
 pub(crate) struct Options {
     pub(crate) name: String,
-    pub(crate) writer: Option<RefCell<Box<dyn AnyWrite>>>,
+    pub(crate) writer: Option<WriteImpl>,
     pub(crate) min_level_inclusive: u16,
 }
 
@@ -108,29 +125,20 @@ impl Bunyarr {
         obj.insert("hostname".to_string(), json!(PROC_INFO.hostname));
         obj.insert("pid".to_string(), json!(PROC_INFO.pid));
         obj.insert("v".to_string(), json!(0));
-        let mut writer = RefCell::borrow_mut(&self.writer);
-        let _ = serde_json::to_writer(writer.deref_mut(), &obj);
-        let _ = writer.write_all(b"\n");
+        let _ = self.writer.work(|mut w| {
+            serde_json::to_writer(&mut w, &obj)?;
+            w.write_all(b"\n")
+        });
     }
 
     #[cfg(test)]
-    pub(crate) fn into_inner(self) -> RefCell<Box<dyn AnyWrite>> {
+    pub(crate) fn into_inner(self) -> WriteImpl {
         self.writer
     }
 }
 
-fn default_writer() -> RefCell<Box<dyn AnyWrite>> {
-    RefCell::new(Box::new(std::io::stdout()))
-}
-
-trait AnyWrite: Write + Any {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: Write + Any> AnyWrite for T {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
+fn default_writer() -> WriteImpl {
+    WriteImpl::StdOut
 }
 
 struct ProcInfo {

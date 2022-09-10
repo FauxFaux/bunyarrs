@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use serde_json::{json, Map, Value};
 
-use crate::{AnyWrite, Bunyarr, Options};
+use crate::{Bunyarr, Options, WriteImpl};
 
 #[test]
 fn smoke() {
@@ -39,19 +39,20 @@ fn strip_variable(line: &mut Map<String, Value>) {
     assert!(matches!(line.remove("pid"), Some(Value::Number(_))));
 }
 
-fn test_writer() -> Option<RefCell<Box<dyn AnyWrite>>> {
-    Some(RefCell::new(Box::new(Vec::<u8>::new())))
+fn test_writer() -> Option<WriteImpl> {
+    Some(WriteImpl::Test(RefCell::new(Vec::new())))
 }
 
 fn into_lines(logger: Bunyarr) -> Vec<Map<String, Value>> {
     let vec = logger.into_inner();
-    let borrow_checker_demands = AnyWrite::as_any(&**vec.borrow())
-        .downcast_ref::<Vec<u8>>()
-        .expect("was a valid test writer")
-        .split(|&p| p == b'\n')
-        // .map(|s| s.trim_ascii())
-        .filter(|s| !s.is_empty())
-        .map(|s| serde_json::from_slice(s).unwrap())
-        .collect();
+    let borrow_checker_demands = match vec {
+        WriteImpl::Test(vec) => vec.into_inner(),
+        _ => panic!("not test"),
+    }
+    .split(|&p| p == b'\n')
+    // .map(|s| s.trim_ascii())
+    .filter(|s| !s.is_empty())
+    .map(|s| serde_json::from_slice(s).unwrap())
+    .collect();
     borrow_checker_demands
 }
