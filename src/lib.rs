@@ -66,7 +66,7 @@ impl Bunyarr {
 
     #[inline]
     pub fn debug(&self, extras: impl Extras, event_type: &'static str) {
-        if self.min_level_inclusive < 20 {
+        if self.min_level_inclusive > 20 {
             return;
         }
         self.log(20, extras, event_type)
@@ -74,7 +74,7 @@ impl Bunyarr {
 
     #[inline]
     pub fn info(&self, extras: impl Extras, event_type: &'static str) {
-        if self.min_level_inclusive < 30 {
+        if self.min_level_inclusive > 30 {
             return;
         }
         self.log(30, extras, event_type)
@@ -82,7 +82,7 @@ impl Bunyarr {
 
     #[inline]
     pub fn warn(&self, extras: impl Extras, event_type: &'static str) {
-        if self.min_level_inclusive < 40 {
+        if self.min_level_inclusive > 40 {
             return;
         }
         self.log(40, extras, event_type)
@@ -90,7 +90,7 @@ impl Bunyarr {
 
     #[inline]
     pub fn error(&self, extras: impl Extras, event_type: &'static str) {
-        if self.min_level_inclusive < 50 {
+        if self.min_level_inclusive > 50 {
             return;
         }
         self.log(50, extras, event_type)
@@ -98,7 +98,7 @@ impl Bunyarr {
 
     #[inline]
     pub fn fatal(&self, extras: impl Extras, event_type: &'static str) {
-        if self.min_level_inclusive < 60 {
+        if self.min_level_inclusive > 60 {
             return;
         }
         self.log(60, extras, event_type)

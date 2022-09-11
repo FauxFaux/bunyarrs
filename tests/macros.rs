@@ -24,10 +24,13 @@ fn varies() {
         json!({ "an_int": 5, "a_string": "hello" })
     );
 
-    assert_eq!(vars ! { ex }, json!({ "ex": {
-        "a": 0,
-        "b": null,
-    }}));
+    assert_eq!(
+        vars! { ex },
+        json!({ "ex": {
+            "a": 0,
+            "b": null,
+        }})
+    );
 }
 
 #[test]

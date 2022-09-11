@@ -32,6 +32,14 @@ Will print, to stdout, on one line (whitespace added for the docs):
 ```
 
 
+### Configuration
+
+The default log level is `info`, so `info` or higher will be generated.
+This can be controlled with the environment variable `LOG_LEVEL`, for example,
+`LOG_LEVEL=error` will hide any `debug`, `info`, or `warn` logs, but still
+show `error` and `fatal` logs.
+
+
 ### ...why?
 
 It's better than `eprintln!` and easier to get going with than `slog`.
