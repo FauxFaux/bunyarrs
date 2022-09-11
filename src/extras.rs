@@ -29,3 +29,27 @@ impl Extras for HashMap<String, Value> {
         self.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
     }
 }
+
+impl Extras for () {
+    fn to_extras(&self) -> Vec<(String, Value)> {
+        vec![]
+    }
+}
+
+#[macro_export]
+macro_rules! vars {
+    ($($var:ident),+ $(,)?) => {
+        json!({
+            $(stringify!($var): json!($var)),+
+        })
+    };
+}
+
+#[macro_export]
+macro_rules! vars_dbg {
+    ($($var:ident),+ $(,)?) => {
+        json!({
+            $(stringify!($var): format!("{:?}", $var)),+
+        })
+    };
+}
