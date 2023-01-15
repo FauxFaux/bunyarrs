@@ -81,6 +81,16 @@ The existing rust-log ecosystem? Sorry, they use format strings, which is banned
 Custom formatters? Maybe you want to write your own `vars!` macro?
 
 
+### How slow is it?
+
+`Bunyarr::with_name()` tries not to do work, e.g. it pre-loads the hostname.
+
+`logger.info()` is probably more efficient than you building an object and writing it
+yourself, but probably less efficient than you writing out an object, and writing it
+yourself, if you're careful. Bunyarr tries to be very careful, but is not willing to
+sacrifice the interface for speed.
+
+
 ### Should I use this in a rust *library* I want people to use?
 
 No.

@@ -1,3 +1,45 @@
+//! ## Bunyarrs
+//!
+//!
+//! `bunyarrs` is a very opinionated, low performance logging library,
+//! modelled on [node bunyan](https://www.npmjs.com/package/bunyan).
+//!
+//! ```rust
+//! # fn init_foo() {} fn init_bar() {}
+//!
+//! use bunyarrs::{Bunyarr, vars};
+//! use serde_json::json;
+//!
+//! let logger = Bunyarr::with_name("my-module");
+//!
+//! let foo = init_foo();
+//! let bar = init_bar();
+//!
+//! logger.info(vars! { foo, bar }, "initialisation complete");
+//! logger.debug(json!({ "version": 4, "hello": "world", }), "system stats");
+//! ```
+//!
+//! The levels are in the following order:
+//!
+//!  * debug
+//!  * info
+//!  * warn
+//!  * error
+//!  * fatal
+//!
+//! The default log level is `info`, which can be changed with the `LOG_LEVEL` environment variable,
+//! e.g. `LOG_LEVEL=error`. There is no special handling for `debug` or `fatal` (i.e. this are always
+//! available in debug and production builds, and never interfere with program flow).
+//!
+//! All of the log methods have the same signature, which accepts:
+//!
+//!  * the context object, for which you can use `vars!` or `json!`, like above, or `vars_dbg!`, or
+//!      you can specify `()` (nothing). This would ideally accept anything that can be turned into
+//!      `[(String, serde_json::Value)]`. Please raise issues if you have an interesting usecase.
+//!  * the "event name". This is *not* a log line, in the traditional sense. There is no templating
+//!      here, no placeholders, no support for dynamic strings at all. This should be a static string
+//!      literal in nearly every situation.
+
 use std::io;
 use std::io::Write;
 
@@ -12,6 +54,13 @@ mod extras;
 #[cfg(test)]
 mod tests;
 
+/// The main logger interface.
+///
+/// ```rust
+/// # use bunyarrs::Bunyarr;
+/// let logger = Bunyarr::with_name("client-factory-factory");
+/// logger.info((), "creating a factory to create a factory to create a factory");
+/// ```
 pub struct Bunyarr {
     writer: WriteImpl,
     name: String,
@@ -25,6 +74,7 @@ enum WriteImpl {
 }
 
 impl WriteImpl {
+    #[inline]
     fn work(&self, f: impl FnOnce(&mut dyn Write) -> io::Result<()>) -> io::Result<()> {
         match self {
             WriteImpl::StdOut => {
@@ -48,6 +98,12 @@ lazy_static::lazy_static! {
 }
 
 impl Bunyarr {
+    /// Create a logger with a specified "module" name, called just "name" in the output.
+    ///
+    /// Inside myapp/src/clients/pg/mod.rs, you may want to use a name like "myapp-client-pg".
+    ///
+    /// This function is quite cheap, but it may still be better to call it outside of loops, or
+    /// functions, if possible.
     pub fn with_name(name: impl ToString) -> Bunyarr {
         Self::with_options(Options {
             name: name.to_string(),
@@ -58,7 +114,7 @@ impl Bunyarr {
 
     pub(crate) fn with_options(options: Options) -> Bunyarr {
         Bunyarr {
-            writer: options.writer.unwrap_or_else(default_writer),
+            writer: options.writer.unwrap_or(WriteImpl::StdOut),
             name: options.name,
             min_level_inclusive: options.min_level_inclusive,
         }
@@ -119,7 +175,7 @@ impl Bunyarr {
         obj.insert("level".to_string(), json!(level));
         obj.insert("msg".to_string(), json!(event_type));
         obj.insert("name".to_string(), json!(self.name));
-        for (key, value) in extras.to_extras() {
+        for (key, value) in extras.into_extras() {
             obj.insert(key, value);
         }
         obj.insert("hostname".to_string(), json!(PROC_INFO.hostname));
@@ -137,10 +193,6 @@ impl Bunyarr {
     }
 }
 
-fn default_writer() -> WriteImpl {
-    WriteImpl::StdOut
-}
-
 struct ProcInfo {
     hostname: String,
     pid: u32,
@@ -150,8 +202,7 @@ struct ProcInfo {
 impl ProcInfo {
     fn new() -> ProcInfo {
         ProcInfo {
-            // non-utf8 hostname: ignored
-            hostname: gethostname::gethostname().into_string().unwrap_or_default(),
+            hostname: gethostname::gethostname().to_string_lossy().to_string(),
             pid: std::process::id(),
             min_level_inclusive: std::env::var("LOG_LEVEL")
                 .map(|s| match s.to_ascii_lowercase().as_ref() {
