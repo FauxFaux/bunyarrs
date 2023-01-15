@@ -11,7 +11,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-gethostname = "0.2"
+gethostname = "0.4"
 lazy_static = "1"
 serde_json = { version = "1", features = ["preserve_order"] }
 time = { version = "0.3", features = ["formatting"] }
