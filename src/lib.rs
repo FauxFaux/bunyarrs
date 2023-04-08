@@ -163,7 +163,8 @@ impl Bunyarr {
     pub(crate) fn log(&self, level: u16, extras: impl Extras, event_type: &'static str) {
         // https://github.com/trentm/node-bunyan#core-fields
         // allowing overwriting of things disallowed by bunyan, not particularly concerned, prefer the order
-        let mut obj = serde_json::Map::<String, Value>::with_capacity(12);
+        let capacity = 7 + extras.size_hint().unwrap_or(5);
+        let mut obj = serde_json::Map::<String, Value>::with_capacity(capacity);
         obj.insert(
             "time".to_string(),
             Value::String(

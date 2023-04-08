@@ -10,6 +10,9 @@ where
     Self: Sized,
 {
     fn into_extras(self) -> Pairs;
+    fn size_hint(&self) -> Option<usize> {
+        None
+    }
 }
 
 impl Extras for Value {
@@ -19,11 +22,22 @@ impl Extras for Value {
             _ => Box::new(iter::once(("_".to_string(), self.clone()))),
         }
     }
+
+    fn size_hint(&self) -> Option<usize> {
+        Some(match self {
+            Value::Object(map) => map.len(),
+            _ => 1,
+        })
+    }
 }
 
 impl Extras for &[(String, Value)] {
     fn into_extras(self) -> Pairs {
         Box::new(self.to_vec().into_iter())
+    }
+
+    fn size_hint(&self) -> Option<usize> {
+        Some(self.len())
     }
 }
 
@@ -31,11 +45,19 @@ impl Extras for HashMap<String, Value> {
     fn into_extras(self) -> Pairs {
         Box::new(self.into_iter())
     }
+
+    fn size_hint(&self) -> Option<usize> {
+        Some(self.len())
+    }
 }
 
 impl Extras for () {
     fn into_extras(self) -> Pairs {
         Box::new(iter::empty())
+    }
+
+    fn size_hint(&self) -> Option<usize> {
+        Some(0)
     }
 }
 
